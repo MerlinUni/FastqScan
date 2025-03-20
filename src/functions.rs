@@ -1,24 +1,24 @@
 use std::vec;
 
-fn average_base_quality(quals: &[u8]) -> Result<f32, &'static str> {
+fn average_base_quality(quals: &[u8]) -> Result<f64, &'static str> {
     let n = quals.len();
     if n == 0 {
         return Err("Quality string is empty");
     }
 
-    let mut qual_sum: f32 = 0.0;
+    let mut qual_sum: f64 = 0.0;
     for &qual in quals {
         qual_sum += calculate_phred(qual)?; // Propagate error if invalid
     }
 
-    Ok(qual_sum / n as f32)
+    Ok(qual_sum / n as f64)
 }
 
-fn calculate_phred(qual: u8) -> Result<f32, &'static str> {
+fn calculate_phred(qual: u8) -> Result<f64, &'static str> {
     if qual < 33 || qual > 126 {
         return Err("Invalid Phred score");
     }
-    Ok((qual - 33) as f32)
+    Ok((qual - 33) as f64)
 }
 
     
@@ -26,14 +26,14 @@ fn read_length(quals: &[u8]) -> usize {
     quals.len()
 }	
 
-fn average_quality_of_all(qualities: Vec<f32>) -> Result<f32, &'static str> {
+fn average_quality_of_all(qualities: Vec<f64>) -> Result<f64, &'static str> {
     let n = qualities.len();
     if n == 0 {
         return Err("No reads calculated yet! Please run average_base_quality first on each read.");
     }
 
-    let qual_sum: f32 = qualities.iter().sum(); // Summing all values in the vector
-    Ok(qual_sum / n as f32) // Compute average
+    let qual_sum: f64 = qualities.iter().sum(); // Summing all values in the vector
+    Ok(qual_sum / n as f64) // Compute average
 }
 
 #[cfg(test)]
@@ -69,7 +69,7 @@ mod tests {
         let qualities = vec![40.0, 41.0, 93.0];
         assert_eq!(average_quality_of_all(qualities).unwrap(), 58.0);
 
-        let empty_vec: Vec<f32> = vec![];
+        let empty_vec: Vec<f64> = vec![];
         assert!(average_quality_of_all(empty_vec).is_err()); // Should return an error
     }
 

@@ -15,9 +15,11 @@ pub struct FastqRead{
 }
 
 
+
+
 impl FastqRead {
 
-    fn from_str(title: &str) -> Option<Self> {
+    fn from_str(title: &str) -> Option<Self> { //move to from_str 
     let parts: Vec<&str> = title.split(|c| c == ':' || c == ' ').collect();
 
     if parts.len() < 11 {
@@ -45,7 +47,6 @@ impl FastqRead {
 
 
 
-
     fn explain(&self){
         println!("Geräte-ID: {} → Die eindeutige Bezeichnung des Sequenziergeräts", self.device_id);
         println!("Lauf-ID: {} → Dies ist das {}. Mal, dass dieses Gerät betrieben wurde", self.run_id, self.run_id);
@@ -60,21 +61,91 @@ impl FastqRead {
         match self.filter_status {
             'Y' => println!("Filterstatus: {} → Read hat den \"Chastity\"-Filter verletzt", self.filter_status),
             'N' => println!("Filterstatus: {} → Read hat den \"Chastity\"-Filter nicht verletzt", self.filter_status),
-            _ => println!("Filterstatus: {} → Unbekannter Wert!", self.filter_status),
+            _ => println!("Filterstatus: {} → Unbekannter Wert!", self.filter_status),// panic / fail
         }
 
         match self.control_bits {
             0 => println!("Kontrollbits: {} → Kein Kontrollbit aktiviert", self.control_bits),
             n if n%2==0 => println!("Kontrollbits: {} → Mindestens ein Kontrollbit aktiviert", self.control_bits),
-            _ => println!("Kontrollbits: {} → Unbekannter Wert!", self.control_bits),
+            _ => println!("Kontrollbits: {} → Unbekannter Wert!", self.control_bits),// fail here too
         }
     }
 }
 
+#[derive(Debug,PartialEq)]
+struct CountBase {
+    position: u64,
+    A: u32,
+    C: u32,
+    G: u32,
+    T: u32,
+    N: u32,
+}
+
+impl CountBase {
+    fn new(position: u64) -> Self {
+        Self {
+            position,
+            A: 0,
+            C: 0,
+            G: 0,
+            T: 0,
+            N: 0,
+        }
+    }
+
+    fn count(&mut self, base: u8) {
+        match base {
+            b'A' => self.A += 1,
+            b'C' => self.C += 1,
+            b'G' => self.G += 1,
+            b'T' => self.T += 1,
+            b'N' => self.N += 1,
+            _ => (),
+        }
+    }
+
+    fn average_g_c_at_pos(&self) -> (f64, f64) {
+        let total = (self.A + self.C + self.G + self.T) as f64;
+        if total == 0.0 {
+            return (0.0, 0.0);
+        }
+        (
+            self.C as f64 * 100.0 / total,
+            self.G as f64 * 100.0 / total,
+        )
+    }
+
+
+    fn amino_percentage(&self) -> (f64, f64, f64, f64, f64) {
+        let total = (self.A + self.C + self.G + self.T + self.N) as f64;
+        if total == 0.0 {
+            return (0.0, 0.0, 0.0, 0.0, 0.0);
+        }
+        (
+            self.A as f64 * 100.0 / total,
+            self.C as f64 * 100.0 / total,
+            self.G as f64 * 100.0 / total,
+            self.T as f64 * 100.0 / total,
+            self.N as f64 * 100.0 / total,
+        )
+    }
+}
+
+fn average_g_c_read(s: &str) -> (f64, f64) {
+    let mut count = CountBase::new(0);
+
+    for &c in s.as_bytes() { // `as_bytes()` gibt ein Slice von `u8` zurück
+        count.count(c);
+    }
+
+    count.average_g_c_at_pos()
+}
 
 #[cfg(test)]
     mod tests {
-        use crate::struct_read_name::FastqRead;
+        use crate::structs::FastqRead;
+        use super::*;
 
 
     #[test]
@@ -111,6 +182,7 @@ impl FastqRead {
 
     assert_eq!(fastq_title.control_bits, 2);
     fastq_title.explain();
+    //missing assert_eq!()
 }
 
 #[test]
@@ -129,4 +201,62 @@ impl FastqRead {
 
     assert_eq!(fastq_title, None);
     }
+
+    #[test]
+    fn test_new() {
+        let count = CountBase::new(10);
+        assert_eq!(count.position, 10);
+        assert_eq!(count.A, 0);
+        assert_eq!(count.C, 0);
+        assert_eq!(count.G, 0);
+        assert_eq!(count.T, 0);
+        assert_eq!(count.N, 0);
     }
+
+    #[test]
+    fn test_count() {
+        let mut count = CountBase::new(5);//shorter tests
+        count.count(b'A');
+        count.count(b'A');
+        count.count(b'C');
+        count.count(b'G');
+        count.count(b'T');
+        count.count(b'N');
+
+        assert_eq!(count.A, 2);
+        assert_eq!(count.C, 1);
+        assert_eq!(count.G, 1);
+        assert_eq!(count.T, 1);
+        assert_eq!(count.N, 1);
+    }
+
+    #[test]
+    fn test_amino_percentage() {
+        let mut count = CountBase::new(2);
+        count.count(b'A');
+        count.count(b'A');
+        count.count(b'C');
+        count.count(b'C');
+        count.count(b'G');
+        count.count(b'T');
+        count.count(b'T');
+        count.count(b'N');
+
+        let (a, c, g, t, n) = count.amino_percentage();
+
+        assert_eq!(a, 25.0);
+        assert_eq!(c, 25.0);
+        assert_eq!(g, 12.5);
+        assert_eq!(t, 25.0);
+        assert_eq!(n, 12.5);
+    }
+
+    #[test]
+    fn test_amino_percentage_zero_division() {
+        let count = CountBase::new(3);
+        let (a, c, g, t, n) = count.amino_percentage();
+        assert_eq!((a, c, g, t, n), (0.0, 0.0, 0.0, 0.0, 0.0));
+    }
+
+  
+}

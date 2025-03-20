@@ -1,5 +1,5 @@
 mod args;
-mod struct_read_name;
+mod structs;
 mod functions;
 use clap::Parser;
 use args::Args;
