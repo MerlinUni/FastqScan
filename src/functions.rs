@@ -1,6 +1,7 @@
 use std::vec;
 
-fn average_base_quality(quals: &[u8]) -> Result<f64, &'static str> {
+
+pub fn average_base_quality(quals: &[u8]) -> Result<f64, &'static str> {
     let n = quals.len();
     if n == 0 {
         return Err("Quality string is empty");
@@ -14,7 +15,7 @@ fn average_base_quality(quals: &[u8]) -> Result<f64, &'static str> {
     Ok(qual_sum / n as f64)
 }
 
-fn calculate_phred(qual: u8) -> Result<f64, &'static str> {
+pub fn calculate_phred(qual: u8) -> Result<f64, &'static str> {
     if qual < 33 || qual > 126 {
         return Err("Invalid Phred score");
     }
@@ -22,11 +23,11 @@ fn calculate_phred(qual: u8) -> Result<f64, &'static str> {
 }
 
     
-fn read_length(quals: &[u8]) -> usize {
+pub fn read_length(quals: &[u8]) -> usize {
     quals.len()
 }	
 
-fn average_quality_of_all(qualities: Vec<f64>) -> Result<f64, &'static str> {
+pub fn average_quality_of_all(qualities: Vec<f64>) -> Result<f64, &'static str> {
     let n = qualities.len();
     if n == 0 {
         return Err("No reads calculated yet! Please run average_base_quality first on each read.");
@@ -35,6 +36,16 @@ fn average_quality_of_all(qualities: Vec<f64>) -> Result<f64, &'static str> {
     let qual_sum: f64 = qualities.iter().sum(); // Summing all values in the vector
     Ok(qual_sum / n as f64) // Compute average
 }
+
+
+
+
+
+
+
+
+
+
 
 #[cfg(test)]
 mod tests {

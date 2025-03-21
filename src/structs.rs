@@ -19,7 +19,7 @@ pub struct FastqRead{
 
 impl FastqRead {
 
-    fn from_str(title: &str) -> Option<Self> { //move to from_str 
+    pub fn from_str(title: &str) -> Option<Self> { //move to from_str 
     let parts: Vec<&str> = title.split(|c| c == ':' || c == ' ').collect();
 
     if parts.len() < 11 {
@@ -47,7 +47,7 @@ impl FastqRead {
 
 
 
-    fn explain(&self){
+    pub fn explain(&self){
         println!("Geräte-ID: {} → Die eindeutige Bezeichnung des Sequenziergeräts", self.device_id);
         println!("Lauf-ID: {} → Dies ist das {}. Mal, dass dieses Gerät betrieben wurde", self.run_id, self.run_id);
         println!("Flowcell-ID: {} → Die eindeutige ID der verwendeten Flowcell", self.flowcell_id);
@@ -105,7 +105,7 @@ impl CountBase {
         }
     }
 
-    fn average_g_c_at_pos(&self) -> (f64, f64) {
+    pub fn average_g_c_at_pos(&self) -> (f64, f64) { //needs testing
         let total = (self.A + self.C + self.G + self.T) as f64;
         if total == 0.0 {
             return (0.0, 0.0);
@@ -117,7 +117,7 @@ impl CountBase {
     }
 
 
-    fn amino_percentage(&self) -> (f64, f64, f64, f64, f64) {
+    pub fn base_percentage(&self) -> (f64, f64, f64, f64, f64) { 
         let total = (self.A + self.C + self.G + self.T + self.N) as f64;
         if total == 0.0 {
             return (0.0, 0.0, 0.0, 0.0, 0.0);
@@ -132,7 +132,9 @@ impl CountBase {
     }
 }
 
-fn average_g_c_read(s: &str) -> (f64, f64) {
+
+
+pub fn average_g_c_read(s: &str) -> (f64, f64) { // needs testing
     let mut count = CountBase::new(0);
 
     for &c in s.as_bytes() { // `as_bytes()` gibt ein Slice von `u8` zurück
@@ -141,6 +143,7 @@ fn average_g_c_read(s: &str) -> (f64, f64) {
 
     count.average_g_c_at_pos()
 }
+
 
 #[cfg(test)]
     mod tests {
@@ -231,7 +234,7 @@ fn average_g_c_read(s: &str) -> (f64, f64) {
     }
 
     #[test]
-    fn test_amino_percentage() {
+    fn test_base_percentage() {
         let mut count = CountBase::new(2);
         count.count(b'A');
         count.count(b'A');
@@ -242,7 +245,7 @@ fn average_g_c_read(s: &str) -> (f64, f64) {
         count.count(b'T');
         count.count(b'N');
 
-        let (a, c, g, t, n) = count.amino_percentage();
+        let (a, c, g, t, n) = count.base_percentage();
 
         assert_eq!(a, 25.0);
         assert_eq!(c, 25.0);
@@ -254,7 +257,7 @@ fn average_g_c_read(s: &str) -> (f64, f64) {
     #[test]
     fn test_amino_percentage_zero_division() {
         let count = CountBase::new(3);
-        let (a, c, g, t, n) = count.amino_percentage();
+        let (a, c, g, t, n) = count.base_percentage();
         assert_eq!((a, c, g, t, n), (0.0, 0.0, 0.0, 0.0, 0.0));
     }
 
