@@ -1,5 +1,5 @@
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct FastqRead{
     device_id: String,
     run_id: u16,
@@ -13,8 +13,6 @@ pub struct FastqRead{
     control_bits: u8,
     index_seq: String,
 }
-
-
 
 
 impl FastqRead {
@@ -43,7 +41,7 @@ impl FastqRead {
     }
 
 
-
+   
 
 
 
@@ -72,18 +70,18 @@ impl FastqRead {
     }
 }
 
-#[derive(Debug,PartialEq)]
-struct CountBase {
-    position: u64,
-    A: u32,
-    C: u32,
-    G: u32,
-    T: u32,
-    N: u32,
+#[derive(Debug, PartialEq, Clone)]
+pub struct CountBase {
+    pub position: u64,
+    pub A: u32,
+    pub C: u32,
+    pub G: u32,
+    pub T: u32,
+    pub N: u32,
 }
 
 impl CountBase {
-    fn new(position: u64) -> Self {
+    pub fn new(position: u64) -> Self {
         Self {
             position,
             A: 0,
@@ -94,7 +92,7 @@ impl CountBase {
         }
     }
 
-    fn count(&mut self, base: u8) {
+    pub fn count(&mut self, base: u8) {
         match base {
             b'A' => self.A += 1,
             b'C' => self.C += 1,
@@ -105,19 +103,15 @@ impl CountBase {
         }
     }
 
-    pub fn average_g_c_at_pos(&self) -> (f64, f64) { //needs testing
+    pub fn average_gc_at_pos(&self) -> f64 {
         let total = (self.A + self.C + self.G + self.T) as f64;
         if total == 0.0 {
-            return (0.0, 0.0);
+            return 0.0; // Avoid division by zero
         }
-        (
-            self.C as f64 * 100.0 / total,
-            self.G as f64 * 100.0 / total,
-        )
+        (self.G + self.C) as f64 * 100.0 / total // Return GC content as a percentage
     }
 
-
-    pub fn base_percentage(&self) -> (f64, f64, f64, f64, f64) { 
+    pub fn base_percentage(&self) -> (f64, f64, f64, f64, f64) {
         let total = (self.A + self.C + self.G + self.T + self.N) as f64;
         if total == 0.0 {
             return (0.0, 0.0, 0.0, 0.0, 0.0);
@@ -133,15 +127,14 @@ impl CountBase {
 }
 
 
-
-pub fn average_g_c_read(s: &str) -> (f64, f64) { // needs testing
+pub fn average_g_c_read(s: &str) -> f64 { // Returns GC content as f64
     let mut count = CountBase::new(0);
 
-    for &c in s.as_bytes() { // `as_bytes()` gibt ein Slice von `u8` zurück
+    for &c in s.as_bytes() {
         count.count(c);
     }
 
-    count.average_g_c_at_pos()
+    count.average_gc_at_pos() // Now returns f64 directly
 }
 
 
